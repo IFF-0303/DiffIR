@@ -1,169 +1,198 @@
+# DiffIR Inpainting
+
+This module contains the inpainting implementation of DiffIR. The code is based on [LaMa](https://github.com/advimman/lama) and includes data preparation scripts, training scripts, evaluation scripts, configs, and model code for CelebA-HQ and Places2 experiments.
+
+## Quick Reference
+
+| Dataset / Setting | Stage 1 Training | Stage 2 Conversion | Stage 2 Training | Testing | Metrics |
+| --- | --- | --- | --- | --- | --- |
+| CelebA-HQ | `sh train_celebahqS1.sh` | `python3 S1forS2.py` | `sh train_celebahqS2.sh` | `sh test_celeba_256_thick.sh` | `sh eval_celeba_256_thick.sh` |
+| Places2 Standard | `sh train_place256S1.sh` | `python3 S1forS2.py` | `sh train_place256S2.sh` | `sh test_place2_512_thick.sh` | `sh eval_place2_512_thick.sh` |
+| Places2 Challenge | `sh train_place256_bigLdataS1.sh` | `python3 S1forS2.py` | `sh train_place256_bigLdataS2.sh` | `sh test_place2_512_thick_big.sh` | `sh eval_place2_512_thick_big.sh` |
+
 ## Training
 
-This code is based on [LaMa](https://github.com/advimman/lama)
+### 1. Prepare Training and Testing Data
 
-###  1. Prepare training and testing data
+#### Places2 Dataset
 
-**Places dataset** 
+Download the Places365-Standard high-resolution train, validation, and test archives from <http://places2.csail.mit.edu/download.html>:
 
-```
-# Download data from http://places2.csail.mit.edu/download.html
-# Places365-Standard: Train(105GB)/Test(19GB)/Val(2.1GB) from High-resolution images section
+```bash
 wget http://data.csail.mit.edu/places/places365/train_large_places365standard.tar
 wget http://data.csail.mit.edu/places/places365/val_large.tar
 wget http://data.csail.mit.edu/places/places365/test_large.tar
+```
 
-# Unpack train/test/val data and create .yaml config for it
+Unpack the train/test/validation data and create dataset configs:
+
+```bash
 bash fetch_data/places_standard_train_prepare.sh
 bash fetch_data/places_standard_test_val_prepare.sh
+```
 
-# Sample images for test and viz at the end of epoch
+Sample validation/test images and generate masks for visualization and end-of-epoch testing:
+
+```bash
 bash fetch_data/places_standard_test_val_sample.sh
 bash fetch_data/places_standard_test_val_gen_masks.sh
+```
 
+Prepare the held-out 30k-image evaluation split and masks used for paper-style metrics:
 
-# To evaluate trained model and report metrics as in our paper
-# we need to sample previously unseen 30k images and generate masks for them
+```bash
 bash fetch_data/places_standard_evaluation_prepare_data.sh
-
 ```
 
-**CelebA dataset** 
+#### CelebA-HQ Dataset
 
+Set the working environment from the LaMa/DiffIR inpainting directory:
+
+```bash
+export TORCH_HOME=$(pwd)
+export PYTHONPATH=$(pwd)
 ```
-# Make shure you are in lama folder
-cd lama
-export TORCH_HOME=$(pwd) && export PYTHONPATH=$(pwd)
 
-# Download CelebA-HQ dataset
-# Download data256x256.zip from https://drive.google.com/drive/folders/11Vz0fqHS2rXDb5pprgTjpD7S2BAJhi1P or https://drive.google.com/file/d/1foD5VnGxBJOg8N__OesoDuYY4DyUL-xE/view?usp=drive_link
+Download `data256x256.zip` from either of the following links:
 
-# unzip & split into train/test/visualization & create config for it
+- <https://drive.google.com/drive/folders/11Vz0fqHS2rXDb5pprgTjpD7S2BAJhi1P>
+- <https://drive.google.com/file/d/1foD5VnGxBJOg8N__OesoDuYY4DyUL-xE/view?usp=drive_link>
+
+Unzip and split the data into train/test/visualization sets, then create configs:
+
+```bash
 bash fetch_data/celebahq_dataset_prepare.sh
+```
 
-# generate masks for test and visual_test at the end of epoch
+Generate masks for test and visual-test sets:
+
+```bash
 bash fetch_data/celebahq_gen_masks.sh
-
 ```
 
-###  2. training
+### 2. Train Models
 
-**2.1 Train on CelebA dataset** 
+DiffIR training uses two stages:
 
-train DiffIR_s1
+1. **Stage 1:** Train DiffIR-S1 to learn the restoration prior with ground-truth guidance.
+2. **Stage 2:** Convert the Stage 1 checkpoint with `S1forS2.py`, update the Stage 2 config paths, then train DiffIR-S2.
 
-```
+#### 2.1 CelebA-HQ
+
+Train DiffIR-S1:
+
+```bash
 sh train_celebahqS1.sh
 ```
 
-train DiffIR_s2
+Convert the pretrained DiffIR-S1 checkpoint:
 
+```bash
+# Edit the `path` item in S1forS2.py so it points to the DiffIR-S1 checkpoint.
+# The conversion produces celeba-S1.pth.
+python3 S1forS2.py
 ```
-# convert pretrained model of DiffIR_s1
-# modify the "path" item in S1forS2.py to the path of the checkpoint of DiffIR_S1 and obtain celeba-S1.pth
 
-python3 S1forS2.py 
-```
-```
-#set the "generatorS2_path" and "generatorS1_path" items of configs/training/DiffIRS2-celeba.yaml to the path of celeba-S1.pth
+Train DiffIR-S2:
 
+```bash
+# Edit `generatorS2_path` and `generatorS1_path` in configs/training/DiffIRS2-celeba.yaml
+# so both point to celeba-S1.pth.
 sh train_celebahqS2.sh
 ```
 
-**2.2 Train on Place2-standard dataset** 
+#### 2.2 Places2 Standard
 
-train DiffIR_s1
+Train DiffIR-S1:
 
-```
+```bash
 sh train_place256S1.sh
 ```
 
-train DiffIR_s2
+Convert the pretrained DiffIR-S1 checkpoint:
 
+```bash
+# Edit the `path` item in S1forS2.py so it points to the DiffIR-S1 checkpoint.
+# The conversion produces place-S1.pth.
+python3 S1forS2.py
 ```
-# convert pretrained model of DiffIR_s1
-# modify the "path" item in S1forS2.py to the path of the checkpoint of DiffIR_S1 and obtain place-S1.pth
 
-python3 S1forS2.py 
-```
-```
-#set the "generatorS2_path" and "generatorS1_path" items of configs/training/DiffIRS2-place2.yaml to the path of place-S1.pth
+Train DiffIR-S2:
 
+```bash
+# Edit `generatorS2_path` and `generatorS1_path` in configs/training/DiffIRS2-place2.yaml
+# so both point to place-S1.pth.
 sh train_place256S2.sh
 ```
 
-**2.3 Train on Place2-Challenge dataset** 
+#### 2.3 Places2 Challenge
 
-train DiffIR_s1
+Train DiffIR-S1:
 
-```
+```bash
 sh train_place256_bigLdataS1.sh
 ```
 
-train DiffIR_s2
+Convert the pretrained DiffIR-S1 checkpoint:
 
+```bash
+# Edit the `path` item in S1forS2.py so it points to the DiffIR-S1 checkpoint.
+# The conversion produces placebigdata-S1.pth.
+python3 S1forS2.py
 ```
-# convert pretrained model of DiffIR_s1
-# modify the "path" item in S1forS2.py to the path of the checkpoint of DiffIR_S1 and obtain placebigdata-S1.pth
 
-python3 S1forS2.py 
-```
-```
-#set the "generatorS2_path" and "generatorS1_path" items of configs/training/DiffIRbigdataS2-place2.yaml to the path of placebigdata-S1.pth
+Train DiffIR-S2:
 
+```bash
+# Edit `generatorS2_path` and `generatorS1_path` in configs/training/DiffIRbigdataS2-place2.yaml
+# so both point to placebigdata-S1.pth.
 sh train_place256_bigLdataS2.sh
 ```
 
-
-**Note:** The above training script uses 8 GPUs by default. To use any other number of GPUs, modify datasets path in configs/training
-/location
+> **GPU note:** The training scripts use 8 GPUs by default. To use a different number of GPUs, update the script launch arguments and dataset paths under `configs/training/location/`.
 
 ## Evaluation
 
-Download the pre-trained [model](https://drive.google.com/drive/folders/1RQXRWMqVaAsyyQt8T-3KtpS68ef8dh90?usp=drive_link) and place it in `./experiments/`
+Download the pretrained [inpainting model](https://drive.google.com/drive/folders/1RQXRWMqVaAsyyQt8T-3KtpS68ef8dh90?usp=drive_link) and place it under `./experiments/`.
 
-#### Testing on CelebA dataset
+### CelebA-HQ
 
-- Testing
-```
+Run testing:
+
+```bash
 sh test_celeba_256_thick.sh
 ```
 
-- Calculating metric
-```
+Calculate metrics:
+
+```bash
 sh eval_celeba_256_thick.sh
 ```
 
-#### Testing on Place2-standard dataset
+### Places2 Standard
 
+Run testing:
 
-- Testing
-```
+```bash
 sh test_place2_512_thick.sh
 ```
 
-- Calculating metric
-```
+Calculate metrics:
+
+```bash
 sh eval_place2_512_thick.sh
 ```
 
-#### Testing on Place2-Challenge dataset
+### Places2 Challenge
 
+Run testing:
 
-- Testing
-```
+```bash
 sh test_place2_512_thick_big.sh
 ```
 
-- Calculating metric
-```
+Calculate metrics:
+
+```bash
 sh eval_place2_512_thick_big.sh
 ```
-
-
-
-
-
-
-
-
