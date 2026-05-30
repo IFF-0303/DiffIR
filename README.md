@@ -1,117 +1,115 @@
-# DiffIR: Efficient diffusion model for image restoration (ICCV2023)
+# DiffIR: Efficient Diffusion Model for Image Restoration (ICCV 2023)
 
-[Paper](https://arxiv.org/pdf/2303.09472.pdf) | [Project Page](https://github.com/Zj-BinXia/DiffIR) | [pretrained models](https://drive.google.com/drive/folders/10miVILiopE414GyaSZM3EFAZITeY9q0p?usp=sharing)
+[Paper](https://arxiv.org/pdf/2303.09472.pdf) | [Project Page](https://github.com/Zj-BinXia/DiffIR) | [Pretrained Models](https://drive.google.com/drive/folders/10miVILiopE414GyaSZM3EFAZITeY9q0p?usp=sharing)
 
-#### News
-- **Dec 19, 2023:**  We propose reference-based DiffIR (DiffRIR) to alleviate texture, brightness, and contrast disparities between generated and preserved regions during image editing, such as inpainting and outpainting. All training and inference codes and pre-trained models (x1, x2, x4) are released at [Github](https://github.com/Zj-BinXia/DiffRIR)
-- **Sep 10, 2023:** For real-world SR, we release x1 and x2 pre-trained models.
-- **Sep 6, 2023:** For real-world SR and SRGAN, we can test [LR images without GT images](DiffIR-RealSR/options/test_DiffIRS2_GAN_x4.yml) and [inference](DiffIR-RealSR/inference_diffir.py). 
-- **August 31, 2023:** For real-world SR and SRGAN tasks, we updated 2x SR training files. 
-- **August 28, 2023:** For real-world SR tasks, we released the pretrained models [RealworldSR-DiffIRS2-GANV2](https://drive.google.com/drive/folders/1H4DU-9fB15fSz-OFko00HlWYbNSqmAKq?usp=sharing) and [training files](DiffIR-RealSR/options/train_DiffIRS2_GAN_x4_V2.yml) that are more focused on perception rather than the distortion， which can be used to super-resolve AIGC generated images. 
-- **July 20, 2023:** Training&Testing codes and pre-trained models are released!
+DiffIR is an efficient diffusion-based image restoration framework. Instead of repeatedly denoising entire images or feature maps, DiffIR estimates a compact image prior representation (IPR) and uses it to guide restoration. The repository covers inpainting, GAN-based single-image super-resolution, real-world super-resolution, and motion deblurring experiments.
 
-<hr />
+## Highlights
 
+- **Two-stage restoration pipeline:** first pretrains CPEN/DIRformer with ground-truth guidance, then trains a diffusion model to estimate the compact IPR from low-quality inputs.
+- **Efficient diffusion target:** predicts compact prior vectors rather than full images, reducing sampling iterations and computation.
+- **Multi-task coverage:** provides task-specific training, testing, pretrained weights, and reported results for four restoration settings.
 
-> **Abstract:** *Diffusion model (DM) has achieved SOTA performance by modeling the image synthesis process into a sequential application of a denoising network. However, different from image synthesis, image restoration (IR) has a strong constraint to generate results in accordance with ground-truth. Thus, for IR, traditional DMs running massive iterations on a large model to estimate whole images or feature maps is inefficient. To address this issue, we propose an efficient DM for IR (DiffIR), which consists of a compact IR prior extraction network (CPEN), dynamic IR transformer (DIRformer), and denoising network. Specifically, DiffIR has two training stages: pretraining and training DM. In pretraining, we input ground-truth images into CPEN$_{S1}$ to capture a compact IR prior representation (IPR) to guide DIRformer. In the second stage, we train the DM to directly estimate the same IRP as pretrained CPEN$_{S1}$ only using LQ images. We observe that since the IPR is only a compact vector,  DiffIR can use fewer iterations than traditional DM to obtain accurate estimations and generate more stable and realistic results. Since the iterations are few, our DiffIR can adopt a joint optimization of CPEN$_{S2}$, DIRformer, and denoising network, which can further reduce the estimation error influence. We conduct extensive experiments on several IR tasks and achieve SOTA performance while consuming less computational costs.* 
->
+## News
+
+- **Dec 19, 2023:** Reference-based DiffIR (DiffRIR) was released to reduce texture, brightness, and contrast disparities in editing tasks such as inpainting and outpainting. Code and pretrained models are available at [DiffRIR](https://github.com/Zj-BinXia/DiffRIR).
+- **Sep 10, 2023:** Released x1 and x2 pretrained models for real-world super-resolution.
+- **Sep 6, 2023:** Added real-world SR/SRGAN support for testing [LR images without GT images](DiffIR-RealSR/options/test_DiffIRS2_GAN_x4.yml) and [inference](DiffIR-RealSR/inference_diffir.py).
+- **Aug 31, 2023:** Updated 2x SR training files for real-world SR and SRGAN tasks.
+- **Aug 28, 2023:** Released [RealworldSR-DiffIRS2-GANV2 pretrained models](https://drive.google.com/drive/folders/1H4DU-9fB15fSz-OFko00HlWYbNSqmAKq?usp=sharing) and [training files](DiffIR-RealSR/options/train_DiffIRS2_GAN_x4_V2.yml) focused more on perceptual quality than distortion.
+- **Jul 20, 2023:** Released training/testing code and pretrained models.
+
+## Method Summary
+
+> DiffIR is designed for restoration tasks where outputs must remain consistent with the ground truth. It uses a compact IR prior extraction network (CPEN), dynamic IR transformer (DIRformer), and denoising network. Stage 1 learns a compact image prior representation from ground-truth images; Stage 2 trains a diffusion model to estimate that prior from low-quality inputs. Because the diffusion target is compact, DiffIR can use fewer iterations while producing stable and realistic restorations.
 
 <p align="center">
-  <img width="800" src="figs/method.jpg">
+  <img width="800" src="figs/method.jpg" alt="DiffIR method overview">
 </p>
 
----
+## Repository Layout
+
+| Path | Purpose |
+| --- | --- |
+| `DiffIR-inpainting/` | Inpainting training, evaluation, configs, model code, data preparation, and pretrained-model usage notes. |
+| `figs/` | Figures used by the project README, including method and result visualizations. |
+| `DiffIR-SRGAN/` | GAN-based single-image super-resolution code and docs when present in a full checkout. |
+| `DiffIR-RealSR/` | Real-world super-resolution code and docs when present in a full checkout. |
+| `DiffIR-demotionblur/` | Motion deblurring code and docs when present in a full checkout. |
+
+> **Note:** This checkout contains the inpainting module. Some links above point to task directories that may exist only in the full upstream repository or in task-specific releases.
 
 ## Installation
 
-For inpainting, see [pip.sh](DiffIR-inpainting/pip.sh) for the installation of dependencies required to run DiffIR.
+Install dependencies from the task directory you plan to run:
 
-For GAN based single-image super-resolution, see [pip.sh](DiffIR-SRGAN/pip.sh) for the installation of dependencies required to run DiffIR.
+| Task | Installation Entry Point |
+| --- | --- |
+| Inpainting | [`DiffIR-inpainting/pip.sh`](DiffIR-inpainting/pip.sh) |
+| GAN-based single-image super-resolution | `DiffIR-SRGAN/pip.sh` |
+| Real-world super-resolution | `DiffIR-RealSR/pip.sh` |
+| Motion deblurring | `DiffIR-demotionblur/pip.sh` |
 
-For real-world super-resolution, see [pip.sh](DiffIR-RealSR/pip.sh) for the installation of dependencies required to run DiffIR.
+## Training, Evaluation, and Models
 
-For motion deblurring, see [pip.sh](DiffIR-demotionblur/pip.sh) for the installation of dependencies required to run DiffIR.
+Task-specific instructions live in each task directory. Use the table below for quick navigation.
 
-
-
-## Training and Evaluation
-
-Training and Testing instructions for Inpainting, GAN based single-image super-resolution, real-world super-resolution, and motion deblurring are provided in their respective directories. Here is a summary table containing hyperlinks for easy navigation:
-
-<table>
-  <tr>
-    <th align="left">Task</th>
-    <th align="center">Training Instructions</th>
-    <th align="center">Testing Instructions</th>
-    <th align="center">DiffIR's Pretrained Models</th>
-  </tr>
-  <tr>
-    <td align="left">Inpainting</td>
-    <td align="center"><a href="DiffIR-inpainting/README.md#training">Link</a></td>
-    <td align="center"><a href="DiffIR-inpainting/README.md#evaluation">Link</a></td>
-    <td align="center"><a href="https://drive.google.com/drive/folders/1RQXRWMqVaAsyyQt8T-3KtpS68ef8dh90?usp=drive_link">Download</a></td>
-  </tr>
-  <tr>
-    <td>GAN based single-image super-resolution</td>
-    <td align="center"><a href="DiffIR-SRGAN/README.md#training">Link</a></td>
-    <td align="center"><a href="DiffIR-SRGAN/README.md#evaluation">Link</a></td>
-    <td align="center"><a href="https://drive.google.com/drive/folders/1Mmhz6Sx9tz-n3QJAd6w-UlxdugTEH2fV?usp=drive_link">Download</a></td>
-  </tr>
-  <tr>
-    <td>Real-world super-resolution</td>
-    <td align="center"><a href="DiffIR-RealSR/README.md#training">Link</a></td>
-    <td align="center"><a href="DiffIR-RealSR/README.md#evaluation">Link</a></td>
-    <td align="center"><a href="https://drive.google.com/drive/folders/1G3Ep0xd-uBpIXGZFdWzH1uVCOpJaqkOF?usp=drive_link">Download</a></td>
-  </tr>
-  <tr>
-    <td>Motion deblurring</td>
-    <td align="center"><a href="DiffIR-demotionblur/README.md#training">Link</a></td>
-    <td align="center"><a href="DiffIR-demotionblur/README.md#evaluation">Link</a></td>
-    <td align="center"><a href="https://drive.google.com/drive/folders/1JWYaP9VVPX_Mh2w1Vezn74hck-oWSyMh?usp=drive_link">Download</a></td>
-  </tr>
-</table>
+| Task | Training | Evaluation | Pretrained Models |
+| --- | --- | --- | --- |
+| Inpainting | [Instructions](DiffIR-inpainting/README.md#training) | [Instructions](DiffIR-inpainting/README.md#evaluation) | [Download](https://drive.google.com/drive/folders/1RQXRWMqVaAsyyQt8T-3KtpS68ef8dh90?usp=drive_link) |
+| GAN-based single-image super-resolution | [Instructions](DiffIR-SRGAN/README.md#training) | [Instructions](DiffIR-SRGAN/README.md#evaluation) | [Download](https://drive.google.com/drive/folders/1Mmhz6Sx9tz-n3QJAd6w-UlxdugTEH2fV?usp=drive_link) |
+| Real-world super-resolution | [Instructions](DiffIR-RealSR/README.md#training) | [Instructions](DiffIR-RealSR/README.md#evaluation) | [Download](https://drive.google.com/drive/folders/1G3Ep0xd-uBpIXGZFdWzH1uVCOpJaqkOF?usp=drive_link) |
+| Motion deblurring | [Instructions](DiffIR-demotionblur/README.md#training) | [Instructions](DiffIR-demotionblur/README.md#evaluation) | [Download](https://drive.google.com/drive/folders/1JWYaP9VVPX_Mh2w1Vezn74hck-oWSyMh?usp=drive_link) |
 
 ## Results
-Experiments are performed for different image processing tasks including, inpainting, GAN-based single-image super-resolution, real-world super-resolution, and motion deblurring. 
+
+Experiments cover inpainting, GAN-based single-image super-resolution, real-world super-resolution, and motion deblurring.
 
 <details>
-<summary><strong>Inpainting</strong> (click to expand) </summary>
-<img src = "figs/inpainting-quan.jpg"> 
-<img src = "figs/inpainting-qual.jpg"> 
+<summary><strong>Inpainting</strong> (click to expand)</summary>
+
+<img src="figs/inpainting-quan.jpg" alt="Inpainting quantitative results">
+<img src="figs/inpainting-qual.jpg" alt="Inpainting qualitative results">
+
 </details>
 
 <details>
-<summary><strong>GAN-based single-image super-resolution</strong> (click to expand) </summary>
-<img src = "figs/SISR-quan.jpg">  
-<img src = "figs/SISR-qual.jpg">
+<summary><strong>GAN-based single-image super-resolution</strong> (click to expand)</summary>
+
+<img src="figs/SISR-quan.jpg" alt="GAN-based SISR quantitative results">
+<img src="figs/SISR-qual.jpg" alt="GAN-based SISR qualitative results">
+
 </details>
 
 <details>
-<summary><strong>Real-world super-resolution</strong> (click to expand) </summary>
-  
-<img src = "figs/realworldsr-quan.jpg">
-<img src = "figs/realworldsr-qual.jpg">
+<summary><strong>Real-world super-resolution</strong> (click to expand)</summary>
+
+<img src="figs/realworldsr-quan.jpg" alt="Real-world SR quantitative results">
+<img src="figs/realworldsr-qual.jpg" alt="Real-world SR qualitative results">
+
 </details>
 
 <details>
-<summary><strong>Motion deblurring</strong> (click to expand) </summary>
-  
-<img src = "figs/deblur-quan.jpg">
-<img src = "figs/deblur-qual.jpg">
+<summary><strong>Motion deblurring</strong> (click to expand)</summary>
+
+<img src="figs/deblur-quan.jpg" alt="Motion deblurring quantitative results">
+<img src="figs/deblur-qual.jpg" alt="Motion deblurring qualitative results">
+
 </details>
 
 ## Citation
-If you use DiffIR, please consider citing:
 
-    @article{xia2023diffir,
-      title={Diffir: Efficient diffusion model for image restoration},
-      author={Xia, Bin and Zhang, Yulun and Wang, Shiyin and Wang, Yitong and Wu, Xinglong and Tian, Yapeng and Yang, Wenming and Van Gool, Luc},
-      journal={ICCV},
-      year={2023}
-    }
+If you use DiffIR, please cite:
 
+```bibtex
+@article{xia2023diffir,
+  title={Diffir: Efficient diffusion model for image restoration},
+  author={Xia, Bin and Zhang, Yulun and Wang, Shiyin and Wang, Yitong and Wu, Xinglong and Tian, Yapeng and Yang, Wenming and Van Gool, Luc},
+  journal={ICCV},
+  year={2023}
+}
+```
 
 ## Contact
-Should you have any question, please contact zjbinxia@gmail.com
 
-
+For questions, contact <zjbinxia@gmail.com>.
