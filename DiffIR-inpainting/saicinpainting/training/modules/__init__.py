@@ -1,38 +1,40 @@
 import logging
-from archs.S1_arch import DiffIRS1
-from archs.S2_arch import DiffIRS2
+
+from archs import DiffIRS1, DiffIRS2
 from saicinpainting.training.modules.ffc import FFCResNetGenerator
-from saicinpainting.training.modules.pix2pixhd import GlobalGenerator, MultiDilatedGlobalGenerator, \
-    NLayerDiscriminator, MultidilatedNLayerDiscriminator
+from saicinpainting.training.modules.pix2pixhd import (GlobalGenerator, MultiDilatedGlobalGenerator,
+                                                       MultidilatedNLayerDiscriminator, NLayerDiscriminator)
+
+GENERATOR_REGISTRY = {
+    'pix2pixhd_multidilated': MultiDilatedGlobalGenerator,
+    'pix2pixhd_global': GlobalGenerator,
+    'ffc_resnet': FFCResNetGenerator,
+    'DiffIRS1': DiffIRS1,
+    'DiffIRS2': DiffIRS2,
+}
+
+DISCRIMINATOR_REGISTRY = {
+    'pix2pixhd_nlayer_multidilated': MultidilatedNLayerDiscriminator,
+    'pix2pixhd_nlayer': NLayerDiscriminator,
+}
+
 
 def make_generator(config, kind, **kwargs):
     logging.info(f'Make generator {kind}')
 
-    if kind == 'pix2pixhd_multidilated':
-        return MultiDilatedGlobalGenerator(**kwargs)
-    
-    if kind == 'pix2pixhd_global':
-        return GlobalGenerator(**kwargs)
-
-    if kind == 'ffc_resnet':
-        return FFCResNetGenerator(**kwargs)
-    
-    if kind == 'DiffIRS1':
-        return DiffIRS1(**kwargs)
-    
-    if kind == 'DiffIRS2':
-        return DiffIRS2(**kwargs)
-
-    raise ValueError(f'Unknown generator kind {kind}')
+    generator_cls = GENERATOR_REGISTRY.get(kind)
+    if generator_cls is None:
+        raise ValueError(f'Unknown generator kind {kind}')
+    return generator_cls(**kwargs)
 
 
 def make_discriminator(kind, **kwargs):
     logging.info(f'Make discriminator {kind}')
 
-    if kind == 'pix2pixhd_nlayer_multidilated':
-        return MultidilatedNLayerDiscriminator(**kwargs)
+    discriminator_cls = DISCRIMINATOR_REGISTRY.get(kind)
+    if discriminator_cls is None:
+        raise ValueError(f'Unknown discriminator kind {kind}')
+    return discriminator_cls(**kwargs)
 
-    if kind == 'pix2pixhd_nlayer':
-        return NLayerDiscriminator(**kwargs)
 
-    raise ValueError(f'Unknown discriminator kind {kind}')
+__all__ = ['DISCRIMINATOR_REGISTRY', 'GENERATOR_REGISTRY', 'make_discriminator', 'make_generator']

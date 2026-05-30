@@ -1,15 +1,21 @@
 import logging
+
 import torch
+
 from saicinpainting.training.trainers.defaultS1 import DefaultInpaintingTrainingModule
 from saicinpainting.training.trainers.defaultS2 import SDefaultInpaintingTrainingModule
 
-def get_training_model_class(kind):
-    if kind == 'defaultS1':
-        return DefaultInpaintingTrainingModule
-    elif kind == 'defaultS2':
-        return SDefaultInpaintingTrainingModule
+TRAINING_MODEL_REGISTRY = {
+    'defaultS1': DefaultInpaintingTrainingModule,
+    'defaultS2': SDefaultInpaintingTrainingModule,
+}
 
-    raise ValueError(f'Unknown trainer module {kind}')
+
+def get_training_model_class(kind):
+    model_cls = TRAINING_MODEL_REGISTRY.get(kind)
+    if model_cls is None:
+        raise ValueError(f'Unknown trainer module {kind}')
+    return model_cls
 
 
 def make_training_model(config):
@@ -33,4 +39,4 @@ def load_checkpoint(train_config, path, map_location='cuda', strict=True):
     return model
 
 
-
+__all__ = ['TRAINING_MODEL_REGISTRY', 'get_training_model_class', 'load_checkpoint', 'make_training_model']
